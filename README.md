@@ -1,52 +1,58 @@
-Sure, here's a README section for your GitHub repository:
+# DocuTalk: Your Personal Document-Based Conversational AI
 
----
+![DocuTalk Banner](screen-0.jpg)
 
-# DocuTalk: Document-Based Conversational Assistant
-
-DocuTalk is a conversational assistant designed to interact with users based on the content of uploaded PDF documents. This Python application allows users to upload PDF files, and then query the system with natural language questions. DocuTalk processes the uploaded documents, extracts relevant information, and responds to user queries with the extracted content.
+DocuTalk is an intelligent conversational assistant that leverages the power of Large Language Models to chat with your PDF documents. Simply upload one or more PDFs, and DocuTalk will answer your questions based on their content. It's built with Python, Chainlit, LangChain, and uses Groq for high-speed inference and Ollama for state-of-the-art text embeddings.
 
 ## Features
 
-- **Document Processing**: DocuTalk can handle multiple PDF files uploaded by the user. It extracts text content from each PDF document and prepares it for further analysis.
-  
-- **Conversational Interface**: Users can interact with DocuTalk using natural language queries. The system uses advanced natural language processing techniques to understand user questions and provide relevant responses.
+-   **Interactive Chat Interface**: A user-friendly interface built with [Chainlit](https://chainlit.io) that allows for seamless uploading of documents and conversation.
+-   **Multi-PDF Support**: Upload up to 10 PDF files at once for a comprehensive Q&A session.
+-   **High-Speed Responses**: Powered by the [Groq](https://groq.com/) LPU™ Inference Engine and the Llama3-70b-8192 model.
+-   **Advanced Text Analysis**: Utilizes `nomic-embed-text` via [Ollama](https://ollama.com/) for efficient and accurate text embeddings.
+-   **Conversational Memory**: Remembers the context of the conversation to provide relevant, follow-up answers.
+-   **Source Citing**: Cites the sources from the documents that were used to generate the answer.
 
-- **Document Retrieval**: DocuTalk utilizes a document retrieval system to find relevant information from the uploaded documents based on user queries. It employs vector embeddings and memory-based techniques to retrieve contextually appropriate responses.
+## Prerequisites
 
-## Installation
+This application uses [Ollama](https://ollama.com/) to generate text embeddings locally. Before you begin, you need to have Ollama installed and running.
 
-1. Clone the repository:
-
+1.  **Install Ollama**: Follow the instructions on the [Ollama website](https://ollama.com/download).
+2.  **Pull the Embedding Model**: Once Ollama is running, pull the `nomic-embed-text` model by running the following command in your terminal:
     ```bash
-    git clone https://github.com/your_username/docutalk.git
-    cd docutalk
+    ollama pull nomic-embed-text
     ```
 
-2. Install dependencies:
+## Installation & Setup
 
+1.  **Clone the Repository**:
+    ```bash
+    git clone <your-repository-url>
+    cd <repository-directory>
+    ```
+
+2.  **Install Dependencies**:
+    Create a virtual environment (recommended) and install the required Python packages.
     ```bash
     pip install -r requirements.txt
     ```
 
-3. Set up environment variables:
-
-    Create a `.env` file in the project root directory and add your GROQ API key:
-
+3.  **Set Up Environment Variables**:
+    Create a file named `.env` in the root of your project directory and add your Groq API key:
     ```dotenv
-    GROQ_API_KEY=your_groq_api_key
+    GROQ_API_KEY="your-groq-api-key"
     ```
-
-4. Run the application:
-
-    ```bash
-    python main.py
-    ```
+    You can get a free API key from the [Groq Console](https://console.groq.com/keys).
 
 ## Usage
 
-1. Launch the application by running `main.py`.
-2. Access the application through your web browser.
-3. Upload one or more PDF files.
-4. Ask questions or provide queries in natural language.
-5. DocuTalk will process your query and provide relevant responses based on the uploaded documents.
+1.  **Ensure Ollama is Running**: Make sure the Ollama application is running in the background.
+2.  **Run the Application**:
+    Execute the following command in your terminal:
+    ```bash
+    chainlit run app.py
+    ```
+3.  **Interact with DocuTalk**:
+    -   The application will open in a new browser tab.
+    -   Follow the on-screen instructions to upload your PDF files.
+    -   Once the files are processed, you can start asking questions!
