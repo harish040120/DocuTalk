@@ -115,22 +115,18 @@ tokenInput.addEventListener("change", () => {
   hfClient = new HfInference(hfToken || undefined);
 });
 
-async function queryHF(prompt, model) {
-  const out = await hfClient.textGeneration({
+async function queryHF(question, context, model) {
+  const text = `Context:\n${context}\n\nQuestion: ${question}\n\nAnswer:`;
+  const out = await hfClient.conversational({
     model,
-    inputs: prompt,
-    parameters: { max_new_tokens: 512, temperature: 0.2, return_full_text: false, repetition_penalty: 1.1 },
+    text,
+    params: { max_new_tokens: 512, temperature: 0.2, repetition_penalty: 1.1, return_full_text: false },
   });
-  if (Array.isArray(out)) return out[0].generated_text;
-  return out.generated_text || JSON.stringify(out);
-}
-
-function buildPrompt(context, question) {
-  const sys =
-    "You are DocuTalk, a helpful assistant that answers questions based ONLY on the provided document context. " +
-    "If the context does not contain the answer, say you don't know. Be concise and cite the relevant part when possible.";
-  const user = `Context:\n${context}\n\nQuestion: ${question}\n\nAnswer:`;
-  return `<|system|>\n${sys}</s>\n<|user|>\n${user}</s>\n<|assistant|>\n`;
+  if (out && out.conversation && Array.isArray(out.conversation.generated_responses)) {
+    return out.conversation.generated_responses[out.conversation.generated_responses.length - 1];
+  }
+  if (out && typeof out.generated_text === "string") return out.generated_text;
+  return JSON.stringify(out);
 }
 
 // ---------------------------------------------------------------------------
@@ -172,10 +168,9 @@ async function ask() {
   const model = modelInput.value.trim() || "HuggingFaceH4/zephyr-7b-beta";
   const top = retrieve(q, 4);
   const context = top.map((c) => c.text).join("\n\n---\n\n").slice(0, 3500);
-  const prompt = buildPrompt(context, q);
 
   try {
-    const answer = await queryHF(prompt, model);
+    const answer = await queryHF(q, context, model);
     thinking.textContent = answer.trim();
     if (top.length) {
       const src = top.map((c) => c.source).join(", ");
