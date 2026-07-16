@@ -1,4 +1,5 @@
 import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs";
+import { HfInference } from "https://esm.sh/@huggingface/inference@3";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs";
@@ -103,26 +104,25 @@ function retrieve(query, k = 4) {
 }
 
 // ---------------------------------------------------------------------------
-// HF serverless Inference API (free, no per-user key when token empty)
+// HF serverless Inference API via the official browser client (CORS-safe).
+// Free, no per-user key when token is empty.
 // ---------------------------------------------------------------------------
+let hfClient = new HfInference(hfToken || undefined);
+
+tokenInput.addEventListener("change", () => {
+  hfToken = tokenInput.value.trim();
+  localStorage.setItem("docutalk_hf_token", hfToken);
+  hfClient = new HfInference(hfToken || undefined);
+});
+
 async function queryHF(prompt, model) {
-  const headers = { "Content-Type": "application/json" };
-  if (hfToken) headers["Authorization"] = "Bearer " + hfToken;
-  const res = await fetch("https://api-inference.huggingface.co/models/" + model, {
-    method: "POST",
-    headers,
-    body: JSON.stringify({
-      inputs: prompt,
-      parameters: { max_new_tokens: 512, temperature: 0.2, return_full_text: false, repetition_penalty: 1.1 },
-    }),
+  const out = await hfClient.textGeneration({
+    model,
+    inputs: prompt,
+    parameters: { max_new_tokens: 512, temperature: 0.2, return_full_text: false, repetition_penalty: 1.1 },
   });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error("HF " + res.status + ": " + t.slice(0, 300));
-  }
-  const data = await res.json();
-  if (Array.isArray(data)) return data[0].generated_text;
-  return data.generated_text || JSON.stringify(data);
+  if (Array.isArray(out)) return out[0].generated_text;
+  return out.generated_text || JSON.stringify(out);
 }
 
 function buildPrompt(context, question) {
@@ -153,10 +153,6 @@ fileInput.addEventListener("change", async (e) => {
 });
 
 tokenInput.value = hfToken;
-tokenInput.addEventListener("change", () => {
-  hfToken = tokenInput.value.trim();
-  localStorage.setItem("docutalk_hf_token", hfToken);
-});
 
 sendBtn.addEventListener("click", ask);
 questionInput.addEventListener("keydown", (e) => {
