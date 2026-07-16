@@ -116,14 +116,21 @@ tokenInput.addEventListener("change", () => {
 });
 
 async function queryHF(question, context, model) {
-  const text = `Context:\n${context}\n\nQuestion: ${question}\n\nAnswer:`;
-  const out = await hfClient.conversational({
+  const out = await hfClient.chatCompletion({
     model,
-    text,
-    params: { max_new_tokens: 512, temperature: 0.2, repetition_penalty: 1.1, return_full_text: false },
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are DocuTalk, a helpful assistant that answers questions based ONLY on the provided document context. " +
+          "If the context does not contain the answer, say you don't know. Be concise.",
+      },
+      { role: "user", content: `Context:\n${context}\n\nQuestion: ${question}` },
+    ],
+    parameters: { max_new_tokens: 512, temperature: 0.2, repetition_penalty: 1.1 },
   });
-  if (out && out.conversation && Array.isArray(out.conversation.generated_responses)) {
-    return out.conversation.generated_responses[out.conversation.generated_responses.length - 1];
+  if (out && Array.isArray(out.choices) && out.choices[0] && out.choices[0].message) {
+    return out.choices[0].message.content;
   }
   if (out && typeof out.generated_text === "string") return out.generated_text;
   return JSON.stringify(out);
