@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>DocuTalk — Chat with your PDFs</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>📄 DocuTalk</h1>
+        <p class="tagline">Chat with your PDFs using free open models from the Hugging Face Hub. No API key required.</p>
+      </header>
+
+      <section class="controls">
+        <label class="filelabel">
+          Upload PDF(s)
+          <input id="pdf" type="file" accept="application/pdf" />
+        </label>
+        <div class="row">
+          <label>Model
+            <input id="model" type="text" value="HuggingFaceH4/zephyr-7b-beta" />
+          </label>
+          <label>HF token (optional)
+            <input id="token" type="password" placeholder="leave empty for anonymous" />
+          </label>
+        </div>
+        <div id="uploadStatus" class="status">No document loaded yet.</div>
+      </section>
+
+      <section id="chat" class="chat"></section>
+
+      <footer class="composer">
+        <textarea id="question" rows="2" placeholder="Ask a question about your document…"></textarea>
+        <button id="send">Send</button>
+      </footer>
+    </main>
+    <script type="module" src="app.js"></script>
+  </body>
+</html>

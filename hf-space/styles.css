@@ -1,0 +1,75 @@
+:root {
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --accent: #6366f1;
+  --user: #2563eb;
+  --bot: #334155;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+main {
+  max-width: 820px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+header h1 { margin: 0 0 4px; font-size: 1.6rem; }
+.tagline { margin: 0 0 12px; color: var(--muted); font-size: 0.9rem; }
+
+.controls {
+  background: var(--panel);
+  border-radius: 12px;
+  padding: 14px;
+  margin-bottom: 12px;
+}
+.filelabel { display: block; font-weight: 600; margin-bottom: 10px; }
+.filelabel input { display: block; margin-top: 6px; }
+
+.row { display: flex; gap: 12px; flex-wrap: wrap; }
+.row label { flex: 1; display: flex; flex-direction: column; font-size: 0.8rem; color: var(--muted); }
+.row input {
+  margin-top: 4px; padding: 8px; border-radius: 8px; border: 1px solid #334155;
+  background: #0b1220; color: var(--text); font-size: 0.9rem;
+}
+
+.status { margin-top: 10px; font-size: 0.85rem; color: var(--muted); }
+.status.err { color: #f87171; }
+
+.chat { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 8px 0; }
+
+.msg { display: flex; flex-direction: column; max-width: 80%; }
+.msg.user { align-self: flex-end; align-items: flex-end; }
+.msg.bot { align-self: flex-start; }
+
+.bubble {
+  padding: 10px 14px; border-radius: 14px; line-height: 1.4; white-space: pre-wrap;
+  background: var(--bot); color: var(--text);
+}
+.msg.user .bubble { background: var(--user); }
+.msg.bot.err .bubble { background: #7f1d1d; }
+
+.source { font-size: 0.72rem; color: var(--muted); margin-top: 4px; max-width: 80%; }
+
+.composer { display: flex; gap: 8px; margin-top: 12px; }
+.composer textarea {
+  flex: 1; resize: none; padding: 10px; border-radius: 10px; border: 1px solid #334155;
+  background: #0b1220; color: var(--text); font-size: 0.95rem;
+}
+#send {
+  padding: 0 18px; border: none; border-radius: 10px; cursor: pointer;
+  background: var(--accent); color: white; font-weight: 600;
+}
+#send:hover { filter: brightness(1.1); }

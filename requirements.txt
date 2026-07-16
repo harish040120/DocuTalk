@@ -1,9 +1,12 @@
 chainlit
 langchain
 langchain_community
+langchain_classic
+langchain_openai
+langchain_huggingface
+langchain_text_splitters
+sentence-transformers
+huggingface_hub
 PyPDF2
 chromadb
-groq
-langchain-groq
-ollama
 python-dotenv

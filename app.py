@@ -1,25 +1,49 @@
 # Import necessary libraries
 import PyPDF2
-from langchain_community.embeddings import OllamaEmbeddings
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
-from langchain.chains import ConversationalRetrievalChain
-from langchain.memory import ChatMessageHistory, ConversationBufferMemory
+from langchain_classic.chains import ConversationalRetrievalChain
+from langchain_classic.memory import ChatMessageHistory, ConversationBufferMemory
 import chainlit as cl
-from langchain_groq import ChatGroq
 from dotenv import load_dotenv
 import os
 
+from langchain_community.embeddings import HuggingFaceEmbeddings
+
 # Loading environment variables from .env file
-load_dotenv() 
+load_dotenv()
 
-# Function to initialize conversation chain with GROQ language model
-groq_api_key = os.environ['GROQ_API_KEY']
+# --- Choose the LLM backend ---
+# If OPENROUTER_API_KEY is provided we use OpenRouter (handy for local dev).
+# Otherwise we fall back to the free Hugging Face serverless Inference API so the
+# app can run on HF Spaces with NO per-user API key (the Space's own HF_TOKEN is
+# injected automatically by Hugging Face and used here).
+openrouter_api_key = os.environ.get("OPENROUTER_API_KEY")
+hf_token = os.environ.get("HF_TOKEN")
 
-# Initializing GROQ chat with provided API key, model name, and settings
-llm_groq = ChatGroq(
-            groq_api_key=groq_api_key, model_name="llama3-70b-8192",
-                         temperature=0.2)
+if openrouter_api_key:
+    from langchain_openai import ChatOpenAI
+    llm = ChatOpenAI(
+        model=os.environ.get("OPENROUTER_MODEL", "openai/gpt-4o-mini"),
+        temperature=0.2,
+        api_key=openrouter_api_key,
+        base_url="https://openrouter.ai/api/v1",
+        default_headers={
+            "HTTP-Referer": "https://github.com/harish040120/DocuTalk",
+            "X-Title": "DocuTalk",
+        },
+    )
+else:
+    from langchain_huggingface import HuggingFaceEndpoint, ChatHuggingFace
+    hf_model = os.environ.get("HF_MODEL", "HuggingFaceH4/zephyr-7b-beta")
+    llm_endpoint = HuggingFaceEndpoint(
+        repo_id=hf_model,
+        task="text-generation",
+        max_new_tokens=512,
+        temperature=0.2,
+        huggingfacehub_api_token=hf_token or None,
+    )
+    llm = ChatHuggingFace(llm=llm_endpoint)
 
 
 # Function to execute when the chat starts
@@ -64,7 +88,7 @@ async def on_chat_start():
         metadatas.extend(file_metadatas)
 
     # Create a Chroma vector store
-    embeddings = OllamaEmbeddings(model="nomic-embed-text")
+    embeddings = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
     docsearch = await cl.make_async(Chroma.from_texts)(
         texts, embeddings, metadatas=metadatas
     )
@@ -82,7 +106,7 @@ async def on_chat_start():
 
     # Create a chain that uses the Chroma vector store
     chain = ConversationalRetrievalChain.from_llm(
-        llm=llm_groq,
+        llm=llm,
         chain_type="stuff",
         retriever=docsearch.as_retriever(),
         memory=memory,

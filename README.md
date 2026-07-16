@@ -1,58 +1,63 @@
+---
+title: DocuTalk
+emoji: 📄
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 8000
+short_description: "Chat with your PDFs using open LLMs — no API key required."
+python_version: "3.12"
+startup_duration_timeout: 30m
+---
+
 # DocuTalk: Your Personal Document-Based Conversational AI
 
 ![DocuTalk Banner](screen-0.jpg)
 
-DocuTalk is an intelligent conversational assistant that leverages the power of Large Language Models to chat with your PDF documents. Simply upload one or more PDFs, and DocuTalk will answer your questions based on their content. It's built with Python, Chainlit, LangChain, and uses Groq for high-speed inference and Ollama for state-of-the-art text embeddings.
+DocuTalk is an intelligent conversational assistant that lets you chat with your PDF
+documents. Upload one or more PDFs and DocuTalk answers questions based on their
+content, citing the sources it used. It is built with [Chainlit](https://chainlit.io),
+[LangChain](https://python.langchain.com/), and runs entirely on open models from the
+Hugging Face Hub — **no API key or paid subscription required from the visitor**.
+
+## How it works (zero per-user key)
+
+- **LLM**: Uses the free Hugging Face serverless Inference API
+  (`langchain_huggingface.ChatHuggingFace`) pointed at an open chat model
+  (default `HuggingFaceH4/zephyr-7b-beta`). The Space's own `HF_TOKEN` is used, so
+  visitors don't need to provide anything.
+- **Embeddings**: `HuggingFaceEmbeddings` (`sentence-transformers/all-MiniLM-L6-v2`)
+  run locally inside the Space on CPU — no external embedding service needed.
+- **Vector store**: Chroma, kept in memory for the session.
+- **UI**: Chainlit — upload PDFs, ask questions, see cited sources.
 
 ## Features
 
--   **Interactive Chat Interface**: A user-friendly interface built with [Chainlit](https://chainlit.io) that allows for seamless uploading of documents and conversation.
--   **Multi-PDF Support**: Upload up to 10 PDF files at once for a comprehensive Q&A session.
--   **High-Speed Responses**: Powered by the [Groq](https://groq.com/) LPU™ Inference Engine and the Llama3-70b-8192 model.
--   **Advanced Text Analysis**: Utilizes `nomic-embed-text` via [Ollama](https://ollama.com/) for efficient and accurate text embeddings.
--   **Conversational Memory**: Remembers the context of the conversation to provide relevant, follow-up answers.
--   **Source Citing**: Cites the sources from the documents that were used to generate the answer.
+- **Interactive Chat Interface** built with Chainlit for seamless document upload and conversation.
+- **Multi-PDF Support**: Upload up to 10 PDF files at once.
+- **Open & Free Inference**: Powered by open models on the Hugging Face Hub.
+- **Conversational Memory**: Remembers context for relevant follow-up answers.
+- **Source Citing**: Shows the document chunks used to generate each answer.
 
-## Prerequisites
+## Running locally
 
-This application uses [Ollama](https://ollama.com/) to generate text embeddings locally. Before you begin, you need to have Ollama installed and running.
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+# Optional: use OpenRouter instead of HF by setting OPENROUTER_API_KEY in .env
+chainlit run app.py
+```
 
-1.  **Install Ollama**: Follow the instructions on the [Ollama website](https://ollama.com/download).
-2.  **Pull the Embedding Model**: Once Ollama is running, pull the `nomic-embed-text` model by running the following command in your terminal:
-    ```bash
-    ollama pull nomic-embed-text
-    ```
+Environment variables (all optional):
 
-## Installation & Setup
-
-1.  **Clone the Repository**:
-    ```bash
-    git clone <your-repository-url>
-    cd <repository-directory>
-    ```
-
-2.  **Install Dependencies**:
-    Create a virtual environment (recommended) and install the required Python packages.
-    ```bash
-    pip install -r requirements.txt
-    ```
-
-3.  **Set Up Environment Variables**:
-    Create a file named `.env` in the root of your project directory and add your Groq API key:
-    ```dotenv
-    GROQ_API_KEY="your-groq-api-key"
-    ```
-    You can get a free API key from the [Groq Console](https://console.groq.com/keys).
+| Variable             | Default                          | Purpose                                            |
+| -------------------- | -------------------------------- | -------------------------------------------------- |
+| `HF_TOKEN`           | (auto-injected on HF Spaces)     | Token used to call the HF Inference API            |
+| `HF_MODEL`           | `HuggingFaceH4/zephyr-7b-beta`   | Any text-generation model on the HF Hub            |
+| `OPENROUTER_API_KEY` | unset                            | If set, OpenRouter is used instead of the HF API   |
 
 ## Usage
 
-1.  **Ensure Ollama is Running**: Make sure the Ollama application is running in the background.
-2.  **Run the Application**:
-    Execute the following command in your terminal:
-    ```bash
-    chainlit run app.py
-    ```
-3.  **Interact with DocuTalk**:
-    -   The application will open in a new browser tab.
-    -   Follow the on-screen instructions to upload your PDF files.
-    -   Once the files are processed, you can start asking questions!
+1. Open the Space (or run locally) and upload one or more PDF files.
+2. Wait for the "Files Processed" message.
+3. Ask questions about the documents and review the cited sources.
