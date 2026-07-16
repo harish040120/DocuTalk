@@ -1,5 +1,4 @@
 import * as pdfjsLib from "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.mjs";
-import { HfInference } from "https://esm.sh/@huggingface/inference@3";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc =
   "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.mjs";
@@ -10,6 +9,11 @@ pdfjsLib.GlobalWorkerOptions.workerSrc =
 let docChunks = [];        // array of {text, source}
 let docName = "";
 let hfToken = localStorage.getItem("docutalk_hf_token") || "";
+
+// The classic HF Inference API allows anonymous requests, but it is CORS-blocked
+// for browser callers. We route through a public CORS proxy so the app stays
+// keyless. A user-supplied HF token (optional) is forwarded when present.
+const CORS_PROXY = "https://api.allorigins.win/raw?url=";
 
 // ---------------------------------------------------------------------------
 // DOM
@@ -104,36 +108,43 @@ function retrieve(query, k = 4) {
 }
 
 // ---------------------------------------------------------------------------
-// HF serverless Inference API via the official browser client (CORS-safe).
-// Free, no per-user key when token is empty.
+// HF serverless Inference API (classic endpoint, CORS-proxied, keyless).
 // ---------------------------------------------------------------------------
-let hfClient = new HfInference(hfToken || undefined);
-
+tokenInput.value = hfToken;
 tokenInput.addEventListener("change", () => {
   hfToken = tokenInput.value.trim();
   localStorage.setItem("docutalk_hf_token", hfToken);
-  hfClient = new HfInference(hfToken || undefined);
 });
 
 async function queryHF(question, context, model) {
-  const out = await hfClient.chatCompletion({
-    model,
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are DocuTalk, a helpful assistant that answers questions based ONLY on the provided document context. " +
-          "If the context does not contain the answer, say you don't know. Be concise.",
-      },
-      { role: "user", content: `Context:\n${context}\n\nQuestion: ${question}` },
-    ],
-    parameters: { max_new_tokens: 512, temperature: 0.2, repetition_penalty: 1.1 },
+  const apiUrl = "https://api-inference.huggingface.co/models/" + model;
+  const body = {
+    inputs: {
+      text: `Context:\n${context}\n\nQuestion: ${question}\n\nAnswer:`,
+      past_user_inputs: [],
+      generated_responses: [],
+    },
+    parameters: { max_new_tokens: 512, temperature: 0.2, repetition_penalty: 1.1, return_full_text: false },
+  };
+  const headers = { "Content-Type": "application/json" };
+  if (hfToken) headers["Authorization"] = "Bearer " + hfToken;
+
+  const res = await fetch(CORS_PROXY + encodeURIComponent(apiUrl), {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
   });
-  if (out && Array.isArray(out.choices) && out.choices[0] && out.choices[0].message) {
-    return out.choices[0].message.content;
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error("HF " + res.status + ": " + t.slice(0, 300));
   }
-  if (out && typeof out.generated_text === "string") return out.generated_text;
-  return JSON.stringify(out);
+  const data = await res.json();
+  if (data && data.conversation && Array.isArray(data.conversation.generated_responses)) {
+    return data.conversation.generated_responses[data.conversation.generated_responses.length - 1];
+  }
+  if (Array.isArray(data)) return data[0].generated_text;
+  if (data && typeof data.generated_text === "string") return data.generated_text;
+  return JSON.stringify(data);
 }
 
 // ---------------------------------------------------------------------------
