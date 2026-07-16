@@ -11,9 +11,22 @@ let docName = "";
 let hfToken = localStorage.getItem("docutalk_hf_token") || "";
 
 // The classic HF Inference API allows anonymous requests, but it is CORS-blocked
-// for browser callers. We route through a public CORS proxy so the app stays
-// keyless. A user-supplied HF token (optional) is forwarded when present.
-const CORS_PROXY = "https://api.allorigins.win/raw?url=";
+// for browser callers. We route through public CORS proxies (tried in order) so
+// the app stays keyless. A user-supplied HF token (optional) is forwarded when present.
+const PROXIES = [
+  (u) => "https://api.codetabs.com/v1/proxy/?quest=" + encodeURIComponent(u),
+  (u) => "https://api.allorigins.win/raw?url=" + encodeURIComponent(u),
+  (u) => "https://thingproxy.freeboard.io/fetch/" + u,
+];
+
+function parseHF(data) {
+  if (data && data.conversation && Array.isArray(data.conversation.generated_responses)) {
+    return data.conversation.generated_responses[data.conversation.generated_responses.length - 1];
+  }
+  if (Array.isArray(data)) return data[0].generated_text;
+  if (data && typeof data.generated_text === "string") return data.generated_text;
+  return JSON.stringify(data);
+}
 
 // ---------------------------------------------------------------------------
 // DOM
@@ -129,22 +142,20 @@ async function queryHF(question, context, model) {
   const headers = { "Content-Type": "application/json" };
   if (hfToken) headers["Authorization"] = "Bearer " + hfToken;
 
-  const res = await fetch(CORS_PROXY + encodeURIComponent(apiUrl), {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const t = await res.text();
-    throw new Error("HF " + res.status + ": " + t.slice(0, 300));
+  let lastErr;
+  for (const mk of PROXIES) {
+    try {
+      const res = await fetch(mk(apiUrl), { method: "POST", headers, body: JSON.stringify(body) });
+      if (!res.ok) {
+        lastErr = new Error("HF " + res.status + ": " + (await res.text()).slice(0, 300));
+        continue;
+      }
+      return parseHF(await res.json());
+    } catch (e) {
+      lastErr = e;
+    }
   }
-  const data = await res.json();
-  if (data && data.conversation && Array.isArray(data.conversation.generated_responses)) {
-    return data.conversation.generated_responses[data.conversation.generated_responses.length - 1];
-  }
-  if (Array.isArray(data)) return data[0].generated_text;
-  if (data && typeof data.generated_text === "string") return data.generated_text;
-  return JSON.stringify(data);
+  throw lastErr || new Error("All CORS proxies failed");
 }
 
 // ---------------------------------------------------------------------------
